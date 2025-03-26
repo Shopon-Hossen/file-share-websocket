@@ -1,18 +1,6 @@
-# server.py
 import socket
 from tqdm import tqdm
 import os
-
-
-class Path:
-    def __init__(self, path=None):
-        self.path = path if path else os.getcwd()
-
-    def __str__(self):
-        return self.path
-
-    def __truediv__(self, other):
-        return Path(os.path.join(self.path, other))
 
 
 def print_local_ip():
@@ -25,7 +13,6 @@ def print_local_ip():
         ip = '127.0.0.1'
     finally:
         s.close()
-    
     print(f"Local IP: {ip}")
 
 
@@ -34,39 +21,38 @@ def get_unique_filename(directory, filename):
     base, ext = os.path.splitext(filename)
     counter = 1
     new_filename = filename
-
     while os.path.exists(os.path.join(directory, new_filename)):
         new_filename = f"{base} ({counter}){ext}"
         counter += 1
-
     return new_filename
 
 
 def start_server(host='0.0.0.0', port=5001):
     print_local_ip()
-    # output_dir = filedialog.askdirectory(title="Where to save received files?")
-    output_dir = Path() / "Received"
-    if not output_dir:
-        print("No directory selected. Exiting.")
-        return
 
-    print(output_dir)
+    # Use current directory with a subfolder "Received"
+    output_dir = os.path.join(os.getcwd(), "Received")
+    # Create the directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Files will be saved in: {output_dir}")
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(5)
+    print(f"Server listening on port {port}...")
 
     while True:
         conn, addr = server_socket.accept()
+        print(f"Connection from {addr}")
 
-        # Receive the file name first
+        # Receive the file name (padded to 1024 bytes)
         filename = conn.recv(1024).decode().strip()
         if not filename:
             print("No filename received. Skipping transfer.")
             conn.close()
             continue
 
-        # Make sure the filename doesn't overwrite an existing file
+        # Ensure the filename doesn't overwrite an existing file
         filename = get_unique_filename(output_dir, filename)
         save_path = os.path.join(output_dir, filename)
 
