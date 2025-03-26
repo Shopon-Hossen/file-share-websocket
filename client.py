@@ -1,3 +1,4 @@
+# client.py
 import socket
 import os
 from tkinter import filedialog

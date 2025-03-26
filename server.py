@@ -1,14 +1,33 @@
+# server.py
 import socket
-import subprocess
-from tkinter import filedialog
 from tqdm import tqdm
 import os
 
-def print_ipconfig():
-    result = subprocess.run(['ipconfig'], capture_output=True, text=True)
-    for line in result.stdout.splitlines():
-        if 'IPv4 Address' in line:
-            print(line.strip())
+
+class Path:
+    def __init__(self, path=None):
+        self.path = path if path else os.getcwd()
+
+    def __str__(self):
+        return self.path
+
+    def __truediv__(self, other):
+        return Path(os.path.join(self.path, other))
+
+
+def print_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # The IP doesn't need to be reachable
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    
+    print(f"Local IP: {ip}")
+
 
 def get_unique_filename(directory, filename):
     """Ensure the file doesn't overwrite an existing one by adding a number if needed."""
@@ -22,13 +41,15 @@ def get_unique_filename(directory, filename):
 
     return new_filename
 
+
 def start_server(host='0.0.0.0', port=5001):
-    print_ipconfig()
-    output_dir = filedialog.askdirectory(title="Where to save received files?")
+    print_local_ip()
+    # output_dir = filedialog.askdirectory(title="Where to save received files?")
+    output_dir = Path() / "Received"
     if not output_dir:
         print("No directory selected. Exiting.")
         return
-    
+
     print(output_dir)
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -60,6 +81,7 @@ def start_server(host='0.0.0.0', port=5001):
 
         print(f"File received and saved as {save_path}")
         conn.close()
+
 
 if __name__ == "__main__":
     start_server()
